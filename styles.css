@@ -1,0 +1,23 @@
+/* styles.css - basic placeholder. Customize as you like. */
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.chat_head h1 {
+    text-align: center;
+}
+
+.footer {
+    margin-top: 3rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid #eee;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #777;
+}
