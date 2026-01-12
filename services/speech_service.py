@@ -19,19 +19,41 @@ def speak_text(text: str):
 
     threading.Thread(target=run_speech, daemon=True).start()
 
-def listen_speech(timeout: int = 5) -> str:
-    """Listen on microphone and return recognized text or an error message."""
+# def listen_speech(timeout: int = 5) -> str:
+#     """Listen on microphone and return recognized text or an error message."""
+#     recognizer = sr.Recognizer()
+#     try:
+#         with sr.Microphone() as source:
+#             st.info("Listening... Please speak")
+#             audio = recognizer.listen(source, timeout=timeout)
+#             try:
+#                 speech_text = recognizer.recognize_google(audio)
+#                 return speech_text
+#             except sr.UnknownValueError:
+#                 return "Sorry, I didn't understand that."
+#             except sr.RequestError:
+#                 return "Sorry, there was an issue with the speech service."
+#     except Exception as e:
+#         return f"Microphone error: {e}"
+
+
+def listen_speech(phrase_time_limit: int = 8) -> str:
     recognizer = sr.Recognizer()
+
     try:
         with sr.Microphone() as source:
-            st.info("Listening... Please speak")
-            audio = recognizer.listen(source, timeout=timeout)
-            try:
-                speech_text = recognizer.recognize_google(audio)
-                return speech_text
-            except sr.UnknownValueError:
-                return "Sorry, I didn't understand that."
-            except sr.RequestError:
-                return "Sorry, there was an issue with the speech service."
-    except Exception as e:
-        return f"Microphone error: {e}"
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            audio = recognizer.listen(
+                source,
+                phrase_time_limit=phrase_time_limit
+            )
+
+        try:
+            return recognizer.recognize_google(audio)
+        except sr.UnknownValueError:
+            return ""
+        except sr.RequestError:
+            return ""
+
+    except Exception:
+        return ""

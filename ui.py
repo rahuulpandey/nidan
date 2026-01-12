@@ -59,7 +59,7 @@ def run_app():
     st.markdown("---")
 
     # Chat interface
-    st.markdown("""<div class="chat_head"><h1>Interactive AI Health Advisor</h1></div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="input-label"><h1>Your Health Query</h1></div>""", unsafe_allow_html=True)
 
     if "user_query" not in st.session_state:
         st.session_state.user_query = ""
@@ -67,21 +67,46 @@ def run_app():
         st.session_state.ai_response = ""
     if "query_history" not in st.session_state:
         st.session_state.query_history = []
+    
+    if "listening" not in st.session_state:
+        st.session_state.listening = False
+
+    if "speech_text" not in st.session_state:
+        st.session_state.speech_text = ""
 
     st.session_state.user_query = st.text_input(
-        "Enter your query: (Ability to answer up to 40+ languages)",
-        value=st.session_state.get("user_query", ""),
-        key="user_query_input"
-    )
+        "Enter your query: (Upto 40+ languages)",
+        value=st.session_state.speech_text or st.session_state.user_query,
+        placeholder="Describe your health concern...",
+        label_visibility="collapsed"
+    )   
 
-    col1, col2 = st.columns(2)
+
+    # live status indicator so the user sees the state change instantly.
+
+    if st.session_state.listening:
+        mic_status = "Listening…" if st.session_state.listening else "Mic idle"
+        mic_color = "#ff4b4b" if st.session_state.listening else "#6c757d"
+
+        st.markdown(
+            f"<div class='mic-status' style='color:{mic_color};'>🎙 {mic_status}</div>",
+            unsafe_allow_html=True
+        )
+
+
+    # # mic buttons and function
+
+    col1, col2 = st.columns([1, 1])
+
     with col1:
-        if st.button("Speak 🎙️", key="listen"):
-            text = listen_speech()
-            st.session_state.user_query = text.strip()
-            st.success(f"You said: {text}")
+        mic_label = "⏹ Stop Listening" if st.session_state.listening else "🎙 Start Listening"
+        if st.button(mic_label):
+            st.session_state.listening = not st.session_state.listening
+            if not st.session_state.listening:
+                st.toast("Listening stopped", icon="⏹")
+
     with col2:
-        if st.button("Send 🤖", key="send"):
+        if st.button("Send 🤖", disabled=st.session_state.listening):
             if st.session_state.user_query.strip():
                 ai_response = chat_with_ai(st.session_state.user_query)
                 st.session_state.ai_response = ai_response
@@ -89,6 +114,20 @@ def run_app():
                 st.success(ai_response)
             else:
                 st.warning("⚠️ Please provide a query to send.")
+
+
+
+    if st.session_state.listening:
+        with st.spinner("Listening..."):
+            text = listen_speech()
+
+        if text:
+            st.session_state.speech_text = text.strip()
+            st.session_state.user_query = st.session_state.speech_text
+            st.session_state.listening = False
+            st.success(f"You said: {text}")
+
+
 
     # Show history if present
     if st.session_state.query_history:
