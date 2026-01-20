@@ -29,13 +29,20 @@ def chat_with_ai(user_input: str):
 
     try:
         custom_prompt = (
-            "You are a helpful Health assistant. Respond in a concise and friendly manner "
-            "to the following issues in no more than 3 lines. Do not add bullet points. Try to "
-            "mention medication only if relevant. Answer in the language of the query. "
+            "You are a professional and empathetic health assistant. "
+            "Provide clear, helpful, and engaging explanations. "
+            "Keep responses informative but not overly long. "
+            "Use short paragraphs if helpful. "
             "Do not answer queries unrelated to healthcare.\n\n"
             f"{user_input}"
         )
-        model = genai.GenerativeModel(model_name="gemini-flash-latest")
+        model = genai.GenerativeModel(model_name="gemini-flash-latest", 
+                                      generation_config={
+                                                            "temperature": 0.7,
+                                                            "top_p": 0.95,
+                                                            "max_output_tokens": 1024
+                                                        }
+        )
         response = model.generate_content(custom_prompt)
         return response.text if hasattr(response, "text") else "No response from AI."
     except Exception as e:

@@ -65,14 +65,16 @@ def run_app():
         st.session_state.user_query = ""
     if "ai_response" not in st.session_state:
         st.session_state.ai_response = ""
+        
     if "query_history" not in st.session_state:
         st.session_state.query_history = []
-    
+
     if "listening" not in st.session_state:
         st.session_state.listening = False
-
     if "speech_text" not in st.session_state:
         st.session_state.speech_text = ""
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
 
     st.session_state.user_query = st.text_input(
         "Enter your query: (Upto 40+ languages)",
@@ -109,13 +111,14 @@ def run_app():
         if st.button("Send 🤖", disabled=st.session_state.listening):
             if st.session_state.user_query.strip():
                 ai_response = chat_with_ai(st.session_state.user_query)
-                st.session_state.ai_response = ai_response
-                st.session_state.query_history.append(st.session_state.user_query)
-                st.success(ai_response)
+                st.session_state.chat_history.append({
+                    "user": st.session_state.user_query,
+                    "ai": ai_response
+                })
+
+                st.session_state.user_query = "" 
             else:
                 st.warning("⚠️ Please provide a query to send.")
-
-
 
     if st.session_state.listening:
         with st.spinner("Listening..."):
@@ -127,13 +130,62 @@ def run_app():
             st.session_state.listening = False
             st.success(f"You said: {text}")
 
+    # if st.session_state.chat_history:
+    #     st.markdown(
+    #         f"<h3 class='history-head'>Chat History "
+    #         f"<span class='counter'>({len(st.session_state.chat_history)})</span></h3>",
+    #         unsafe_allow_html=True
+    #     )
+
+    #     for i, chat in enumerate(st.session_state.chat_history, 1):
+    #         st.markdown(f"<p class='query-item'><b>You:</b> {chat['user']}</p>", unsafe_allow_html=True)
+    #         st.markdown(f"<p class='ai-item'><b>NIDAN.ai:</b> {chat['ai']}</p>", unsafe_allow_html=True)
+    #         st.markdown("<hr>", unsafe_allow_html=True)
 
 
-    # Show history if present
-    if st.session_state.query_history:
-        st.markdown(f"<h3 class='history-head'>Search History <span class='counter'>({len(st.session_state.query_history)})</span></h3>", unsafe_allow_html=True)
-        for i, q in enumerate(reversed(st.session_state.query_history), 1):
-            st.markdown(f"<p class='query-item'>{i}. {q}</p>", unsafe_allow_html=True)
+    if st.session_state.chat_history:
+        st.markdown(
+            f"<h3 class='history-head'>Chat History "
+            f"<span class='counter'>({len(st.session_state.chat_history)})</span></h3>",
+            unsafe_allow_html=True
+        )
+
+        chat_container = st.container()
+
+        with chat_container:
+            chat_html = """
+            <div style="
+                max-height: 350px;
+                overflow-y: auto;
+                padding: 12px;
+                border: 1px solid #333;
+                border-radius: 8px;
+                background-color: rgba(255,255,255,0.02);
+            ">
+            """
+
+            for chat in st.session_state.chat_history:
+                chat_html += f"""
+                <div style="margin-bottom: 14px;">
+                    <p class="query-item"><b>You:</b> {chat['user']}</p>
+                    <p class="ai-item"><b>NIDAN.ai:</b> {chat['ai']}</p>
+                </div>
+                <hr>
+                """
+
+            chat_html += "</div>"
+
+            st.markdown(chat_html, unsafe_allow_html=True)
+
+
+
+
+
+    # # Show history if present
+    # if st.session_state.query_history:
+    #     st.markdown(f"<h3 class='history-head'>Search History <span class='counter'>({len(st.session_state.query_history)})</span></h3>", unsafe_allow_html=True)
+    #     for i, q in enumerate(reversed(st.session_state.query_history), 1):
+    #         st.markdown(f"<p class='query-item'>{i}. {q}</p>", unsafe_allow_html=True)
 
 
 
