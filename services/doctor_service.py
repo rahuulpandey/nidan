@@ -9,7 +9,7 @@
 
 import os
 from typing import List, Dict, Optional
-print("Loaded GEMINI KEY:", os.environ.get("GEMINI_API_KEY"))
+# print("Loaded GEMINI KEY:", os.environ.get("GEMINI_API_KEY"))
 import googlemaps
 import google.generativeai as genai
 
