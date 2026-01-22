@@ -12,21 +12,10 @@ from PIL import Image
 import os
 import html
 import re
-
-def load_css():
-    if os.path.exists(CSS_FILE):
-        with open(CSS_FILE) as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-def hero_and_slideshow():
-    # Simple hero text
-    heading = """
-    <div class="header">
-        <h1>NIDAN.AI</h1>
-        <p><b>NIDAN.AI</b> is an intelligent health diagnosis assistant that helps users understand symptoms and receive health insights in real time.</p>
-    </div>
-    """
-    st.markdown(heading, unsafe_allow_html=True)
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from io import BytesIO
+import textwrap 
 
 SYMPTOM_CATEGORIES = {
     "emergency": [
@@ -86,6 +75,21 @@ EXPLANATION_TEMPLATES = {
     )
 }
  
+def load_css():
+    if os.path.exists(CSS_FILE):
+        with open(CSS_FILE) as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+def hero_and_slideshow():
+    # Simple hero text
+    heading = """
+    <div class="header">
+        <h1>NIDAN.AI</h1>
+        <p><b>NIDAN.AI</b> is an intelligent health diagnosis assistant that helps users understand symptoms and receive health insights in real time.</p>
+    </div>
+    """
+    st.markdown(heading, unsafe_allow_html=True)
+
 # small explanation generator
 def generate_explanation(user_query: str) -> str:
     q = user_query.lower()
@@ -96,6 +100,95 @@ def generate_explanation(user_query: str) -> str:
 
     return EXPLANATION_TEMPLATES["default"]
 
+#helper function for exporting as text
+def export_chat_as_txt(chat_history):
+    lines = []
+    for i, chat in enumerate(chat_history, 1):
+        lines.append(f"Conversation {i}")
+        lines.append(f"User: {chat['user']}")
+        lines.append(f"NIDAN.ai: {chat['ai']}")
+        lines.append("-" * 40)
+    return "\n".join(lines)
+
+
+def clean_markdown(text):
+    # Remove markdown symbols
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    text = re.sub(r"###\s*", "", text)
+    return text
+
+#helper function for exporting as text
+
+def export_chat_as_pdf(chat_history):
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    x_margin = 40
+    y = height - 50
+    max_width = 95
+
+    def new_page():
+        nonlocal y
+        pdf.showPage()
+        pdf.setFont("Helvetica", 11)
+        y = height - 50
+
+    # Title
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(x_margin, y, "NIDAN.ai – Consultation History")
+    y -= 30
+
+    for i, chat in enumerate(chat_history, 1):
+
+        # Conversation heading
+        pdf.setFont("Helvetica-Bold", 13)
+        pdf.drawString(x_margin, y, f"Conversation {i}")
+        y -= 18
+
+        pdf.setFont("Helvetica", 11)
+
+        sections = [
+            ("User:", chat["user"]),
+            ("NIDAN.ai:", chat["ai"])
+        ]
+
+        for label, content in sections:
+            content = clean_markdown(content)
+
+            # Label
+            if y < 80:
+                new_page()
+
+            pdf.setFont("Helvetica-Bold", 11)
+            pdf.drawString(x_margin, y, label)
+            y -= 14
+
+            pdf.setFont("Helvetica", 11)
+
+            paragraphs = content.split("\n")
+
+            for para in paragraphs:
+                wrapped_lines = textwrap.wrap(para, max_width)
+
+                for line in wrapped_lines:
+                    if y < 60:
+                        new_page()
+
+                    pdf.drawString(x_margin + 10, y, line)
+                    y -= 14
+
+                y -= 6  # space between paragraphs
+
+        # Divider
+        y -= 10
+        pdf.setLineWidth(0.5)
+        pdf.line(x_margin, y, width - x_margin, y)
+        y -= 20
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer
 
 def format_ai_text(text: str) -> str:
     text = html.escape(text)
@@ -119,13 +212,13 @@ def run_app():
 
     st.markdown("""
     <style>
-    /* Style ALL secondary buttons as destructive */
+    /* Styling primary button as destructive */
     button[kind="primary"] {
         border: none !important;
         background: rgba(220, 53, 69, 0.15) !important; /* soft danger red */
         color: #ff6b6b !important;
         border-radius: 10px !important;
-        padding: 0.6rem 0.9rem !important;
+        padding: 0 16px !important;
     }
 
     /* Hover */
@@ -186,8 +279,6 @@ def run_app():
             use_container_width=True
     )
 
-
-  
 
 # live status indicator so the user sees the state change instantly.
 
@@ -300,6 +391,50 @@ def run_app():
         chat_html += "</div>"
 
         components.html(chat_html, height=420, scrolling=True)
+
+#add export buttons
+    with st.sidebar:
+        st.markdown("### 📤 Export Consultation")
+
+        if st.session_state.chat_history:
+
+            # File name input (without extension)
+            file_name = st.text_input(
+                "File name",
+                value="nidan_consultation",
+                help="Enter file name without extension"
+            )
+
+            # File type selector
+            file_type = st.radio(
+                "Export format",
+                options=["TXT", "PDF"],
+                horizontal=True
+            )
+
+            # Prepare file based on selection
+            if file_type == "TXT":
+                file_data = export_chat_as_txt(st.session_state.chat_history)
+                mime_type = "text/plain"
+                final_file_name = f"{file_name}.txt"
+
+            else:  # PDF
+                file_data = export_chat_as_pdf(st.session_state.chat_history)
+                mime_type = "application/pdf"
+                final_file_name = f"{file_name}.pdf"
+
+            # Download button
+            st.download_button(
+                label="⬇️ Download File",
+                data=file_data,
+                file_name=final_file_name,
+                mime=mime_type
+            )
+
+        else:
+            st.info("No chat history to export.")
+
+
 
 
 # this is the modified part
