@@ -357,24 +357,44 @@ def run_app():
         for chat in st.session_state.chat_history:
             user_text = html.escape(chat["user"]).replace("\n", "<br>")
             ai_text = format_ai_text(chat["ai"])
-            explanation_text = html.escape(chat["explanation"])
+            # Safe access (very important)
+            explanation_text = html.escape(chat.get("explanation", ""))
 
             chat_html += f"""
             <div style="margin-bottom: 18px;">
+
+                <!-- User message -->
                 <div style="
                     padding: 10px 12px;
-                    margin-bottom: 8px;
+                    margin-bottom: 6px;
                     border-left: 4px solid #4da3ff;
                     background: rgba(77,163,255,0.08);
                     font-weight: 600;
                     color: #e6f1ff;
                     border-radius: 6px;
-                    <b>Why this response?</b><br>
-                    {explanation_text}
                 ">
                     <span style="color:#9ad1ff;">You:</span> {user_text}
                 </div>
 
+                <!-- Explainable AI panel (only if explanation exists) -->
+                {""
+                if not explanation_text
+                else f'''
+                <div style="
+                    padding: 8px 12px;
+                    margin-bottom: 8px;
+                    border-left: 4px solid #8bc34a;
+                    background: rgba(139,195,74,0.10);
+                    color: #dcedc8;
+                    border-radius: 6px;
+                    font-size: 13px;
+                ">
+                    <b>Why this response?</b><br>
+                    {explanation_text}
+                </div>
+                '''}
+
+                <!-- AI response -->
                 <div style="
                     padding: 10px 12px;
                     border-left: 4px solid #f5c16c;
@@ -385,8 +405,10 @@ def run_app():
                     <span style="color:#f5c16c; font-weight:600;">NIDAN.ai:</span><br>
                     {ai_text}
                 </div>
+
             </div>
             """
+
 
         chat_html += "</div>"
 
