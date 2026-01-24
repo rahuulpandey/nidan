@@ -9,6 +9,38 @@ import streamlit as st
 from services.doctor_service import recommend_real_doctor
 
 
+#functions for follow up query
+def is_follow_up_query(user_query: str) -> bool:
+    q = user_query.lower().strip()
+
+    follow_up_keywords = [
+        "this", "that", "it", "those", "these",
+        "also", "again", "more", "further",
+        "what about", "how about",
+        "can i", "should i", "is it", "is that"
+    ]
+
+    # Very short questions usually depend on context
+    if len(q.split()) <= 4:
+        return True
+
+    return any(keyword in q for keyword in follow_up_keywords)
+
+
+def build_recent_context(chat_history, turns: int = 2) -> str:
+    if not chat_history:
+        return ""
+
+    recent = chat_history[-turns:]
+    context_lines = []
+
+    for chat in recent:
+        context_lines.append(f"User: {chat['user']}")
+        context_lines.append(f"Assistant: {chat['ai']}")
+
+    return "\n".join(context_lines)
+
+
 def configure_gemini(api_key=None):
     """Configure genai SDK with given API key (or use config)."""
     key = api_key or GOOGLE_API_KEY
@@ -28,14 +60,34 @@ def chat_with_ai(user_input: str):
         return "⚠️ AI service is unavailable due to missing API Key."
 
     try:
+        use_context = False
+        context_block = ""
+
+        if is_follow_up_query(user_input):
+            recent_context = build_recent_context(
+                st.session_state.get("chat_history", []),
+                turns=2
+            )
+
+            if recent_context:
+                use_context = True
+                context_block = (
+                    "Previous conversation context:\n"
+                    f"{recent_context}\n\n"
+                )
+
         custom_prompt = (
             "You are a professional and empathetic health assistant. "
             "Provide clear, helpful, and engaging explanations. "
             "Keep responses informative but not overly long. "
             "Use short paragraphs if helpful. "
             "Do not answer queries unrelated to healthcare.\n\n"
-            f"{user_input}"
         )
+
+        if use_context:
+            custom_prompt += context_block
+
+        custom_prompt += f"Current question:\n{user_input}"
         model = genai.GenerativeModel(model_name="gemini-flash-latest", 
                                       generation_config={
                                                             "temperature": 0.7,

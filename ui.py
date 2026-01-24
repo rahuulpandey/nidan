@@ -207,7 +207,6 @@ def format_ai_text(text: str) -> str:
 
     return text
 
-
 def run_app():
 
     st.markdown("""
