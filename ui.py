@@ -379,33 +379,53 @@ def run_app():
                 {""
                 if not explanation_text
                 else f'''
-                <div style="
-                    padding: 8px 12px;
+                <details style="
                     margin-bottom: 8px;
                     border-left: 4px solid #8bc34a;
-                    background: rgba(139,195,74,0.10);
-                    color: #dcedc8;
+                    background: rgba(139,195,74,0.08);
+                    padding: 8px 12px;
                     border-radius: 6px;
+                    color: #dcedc8;
                     font-size: 13px;
                 ">
-                    <b>Why this response?</b><br>
-                    {explanation_text}
-                </div>
+                    <summary style="
+                        cursor: pointer;
+                        font-weight: 600;
+                        color: #b7e38a;
+                        outline: none;
+                        user-select: none;
+                    ">
+                        Why this response?
+                    </summary>
+                    <div style="margin-top: 6px;">
+                        {explanation_text}
+                    </div>
+                </details>
+                 </div>
                 '''}
 
                 <!-- AI response -->
-                <div style="
-                    padding: 10px 12px;
-                    border-left: 4px solid #f5c16c;
-                    background: rgba(245,193,108,0.06);
-                    color: #eaeaea;
-                    border-radius: 6px;
-                ">
-                    <span style="color:#f5c16c; font-weight:600;">NIDAN.ai:</span><br>
-                    {ai_text}
-                </div>
-
-            </div>
+                <details open style="
+                        padding: 10px 12px;
+                        margin-bottom: 14px;
+                        border-left: 4px solid #f5c16c;
+                        background: rgba(245,193,108,0.06);
+                        color: #eaeaea;
+                        border-radius: 6px;
+                    ">
+                        <summary style="
+                            cursor: pointer;
+                            font-weight: 600;
+                            color: #f5c16c;
+                            outline: none;
+                            user-select: none;
+                        ">
+                            NIDAN.ai Response
+                        </summary>
+                        <div style="margin-top: 8px;">
+                            {ai_text}
+                        </div>
+                </details>
             """
 
 
