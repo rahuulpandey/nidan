@@ -209,30 +209,6 @@ def format_ai_text(text: str) -> str:
 
 def run_app():
 
-    st.markdown("""
-    <style>
-    /* Styling primary button as destructive */
-    button[kind="primary"] {
-        border: none !important;
-        background: rgba(220, 53, 69, 0.15) !important; /* soft danger red */
-        color: #ff6b6b !important;
-        border-radius: 10px !important;
-        padding: 0 16px !important;
-    }
-
-    /* Hover */
-    button[kind="primary"]:hover {
-        background: rgba(220, 53, 69, 0.28) !important;
-        color: #ff4d4d !important;
-    }
-
-    /* Active */
-    button[kind="primary"]:active {
-        background: rgba(220, 53, 69, 0.35) !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 
 # Basic Streamlit page config (should be first call)
     st.set_page_config(page_title="NIDAN.ai", layout="wide")
@@ -334,7 +310,6 @@ def run_app():
         st.session_state.speech_text = ""
         st.session_state.listening = False
         st.toast("Chat cleared", icon="🧹")
-
 
             
 # chat history 
@@ -511,16 +486,31 @@ def run_app():
         with col4:
             st.image(trimmed_image, caption="Trimmed Image", width=200)
 
+        st.markdown("### 🔎 Image Analysis Summary")
+        st.markdown(f"🔬 Mean Intensity: {mean_intensity:.2f}")
+        st.markdown(f"🔍 Edge Density: {edge_density:.4f}")
+        st.markdown(f"🧠 AI Analysis: {ai_feedback}")
 
-            st.markdown(f"🔬 Mean Intensity: {mean_intensity:.2f}")
-            st.markdown(f"🔍 Edge Density: {edge_density:.4f}")
-            st.markdown(f"🧠 AI Analysis: {ai_feedback}")
+        with st.expander("ℹ️ What do these metrics mean?"):
+            st.markdown("""
+            - **Mean Intensity** reflects overall brightness of the image.
+            - **Edge Density** indicates the amount of structural detail.
+            - These values are used only for visual enhancement, not diagnosis.
+            """)
 
 
     else:
         st.info("Upload a medical image to see enhancement and analysis.")
 
 
+    with st.expander("⚠️ Important Medical Disclaimer"):
+        st.markdown("""
+        This tool performs **visual enhancement and basic image analysis only**.
+        
+        - It does NOT diagnose medical conditions.
+        - It does NOT replace a radiologist or clinician.
+        - Always consult a qualified healthcare professional for interpretation.
+        """)
 
     st.markdown("---")
     st.markdown("<div class='chat_head'><h1>Doctor Recommendation</h1></div>", unsafe_allow_html=True)

@@ -13,6 +13,58 @@ body {
     text-align:left;
 }
 
+
+/* ===============================
+   Destructive Primary Button
+   =============================== */
+
+button[kind="primary"] {
+    border: none !important;
+    background: rgba(220, 53, 69, 0.15) !important; /* soft danger red */
+    color: #ff6b6b !important;
+    border-radius: 10px !important;
+    padding: 0 16px !important;
+    font-weight: 600;
+}
+
+/* Hover */
+button[kind="primary"]:hover {
+    background: rgba(220, 53, 69, 0.28) !important;
+    color: #ff4d4d !important;
+}
+
+/* Active / pressed */
+button[kind="primary"]:active {
+    background: rgba(220, 53, 69, 0.35) !important;
+}
+
+
+
+div[data-testid="stExpander"] {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* Expander header */
+div[data-testid="stExpander"] summary {
+    padding: 10px 14px !important;
+    border-radius: 8px;
+    font-weight: 600;
+    list-style: none;
+}
+
+/* Hover effect (clean, subtle) */
+div[data-testid="stExpander"] summary:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Remove inner border line */
+div[data-testid="stExpander"] details {
+    border: none !important;
+}
+
+
 .footer {
     margin-top: 3rem;
     padding: 1.5rem 0;
