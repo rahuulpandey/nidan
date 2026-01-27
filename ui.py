@@ -8,6 +8,7 @@ from utils import get_default_image_paths, encode_image, get_base64_image_raw, t
 from services.ai_service import chat_with_ai, recommend_doctor
 from services.image_service import enhance_and_analyze_image
 from services.speech_service import speak_text, listen_speech
+from services.ai_service import analyze_medical_image_with_ai
 from PIL import Image
 import os
 import html
@@ -472,6 +473,7 @@ def run_app():
 
         # 👇 pass modality to the service
         enhanced_img, edges_img, mean_intensity, edge_density, ai_feedback = enhance_and_analyze_image(image, modality)
+        ai_vision_report = analyze_medical_image_with_ai(image, modality)
         trimmed_image = trim_image(image)
 
 
@@ -491,6 +493,10 @@ def run_app():
         st.markdown(f"🔍 Edge Density: {edge_density:.4f}")
         st.markdown(f"🧠 AI Analysis: {ai_feedback}")
 
+        with st.expander("🧠 AI Visual Review (Educational)"):
+            st.markdown(ai_vision_report)
+
+
         with st.expander("ℹ️ What do these metrics mean?"):
             st.markdown("""
             - **Mean Intensity** reflects overall brightness of the image.
@@ -502,15 +508,16 @@ def run_app():
     else:
         st.info("Upload a medical image to see enhancement and analysis.")
 
-
-    with st.expander("⚠️ Important Medical Disclaimer"):
+    with st.expander("⚠️ Medical Disclaimer"):
         st.markdown("""
-        This tool performs **visual enhancement and basic image analysis only**.
-        
-        - It does NOT diagnose medical conditions.
-        - It does NOT replace a radiologist or clinician.
-        - Always consult a qualified healthcare professional for interpretation.
+        This AI-generated analysis is **educational and non-diagnostic**.
+
+        - This tool performs visual enhancement and basic image analysis .
+        - It does NOT detect diseases
+        - It does NOT replace a radiologist or doctor
+        - Final interpretation must be done by a qualified healthcare professional
         """)
+
 
     st.markdown("---")
     st.markdown("<div class='chat_head'><h1>Doctor Recommendation</h1></div>", unsafe_allow_html=True)
