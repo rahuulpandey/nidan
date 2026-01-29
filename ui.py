@@ -297,10 +297,23 @@ def run_app():
             text = listen_speech()
 
         if text:
-            st.session_state.speech_text = text.strip()
-            st.session_state.user_query = st.session_state.speech_text
+            spoken_text = text.strip()
+
+            # Stop listening immediately
             st.session_state.listening = False
-            st.success(f"You said: {text}")
+            st.session_state.speech_text = ""
+            st.session_state.user_query = ""
+
+            # ✅ Treat voice exactly like typed input
+            ai_response = chat_with_ai(spoken_text)
+
+            st.session_state.chat_history.append({
+                "user": spoken_text,
+                "ai": ai_response,
+                "explanation": generate_explanation(spoken_text)
+            })
+
+            st.toast("Voice query submitted 🎙️", icon="🤖")
 
 
 
@@ -471,6 +484,10 @@ def run_app():
     if uploaded_file is not None:
         image = Image.open(uploaded_file)
 
+        show_intermediate = st.checkbox(
+        "Show Enhanced Images",
+        value=False
+    )
         # 👇 pass modality to the service
         enhanced_img, edges_img, mean_intensity, edge_density, ai_feedback = enhance_and_analyze_image(image, modality)
         ai_vision_report = analyze_medical_image_with_ai(image, modality)
@@ -478,20 +495,27 @@ def run_app():
 
 
 # this is the modified part
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.image(image, caption="Original Image", width=200)
-        with col2:
-            st.image(enhanced_img, caption=f"Enhanced Image ({modality})", width=200)
-        with col3:
-            st.image(edges_img, caption="Edge Map (Canny Detection)", width=200)
-        with col4:
-            st.image(trimmed_image, caption="Trimmed Image", width=200)
+        if show_intermediate:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.image(image, caption="Original Image", width=200)
+                with col2:
+                    st.image(enhanced_img, caption=f"Enhanced Image ({modality})", width=200)
+                with col3:
+                    st.image(edges_img, caption="Edge Map (Canny Detection)", width=200)
+                with col4:
+                    st.image(trimmed_image, caption="Trimmed Image", width=200)
+        else:
+            col1, col2 = st.columns(2)
 
-        st.markdown("### 🔎 Image Analysis Summary")
-        st.markdown(f"🔬 Mean Intensity: {mean_intensity:.2f}")
-        st.markdown(f"🔍 Edge Density: {edge_density:.4f}")
-        st.markdown(f"🧠 AI Analysis: {ai_feedback}")
+            with col1:
+                st.image(image, caption="Original Image", width=200)
+
+# Image summary
+            st.markdown("### 🔎 Image Analysis Summary")
+            st.markdown(f"🔬 Mean Intensity: {mean_intensity:.2f}")
+            st.markdown(f"🔍 Edge Density: {edge_density:.4f}")
+            st.markdown(f"🧠 AI Analysis: {ai_feedback}")
 
         with st.expander("🧠 AI Visual Review (Educational)"):
             st.markdown(ai_vision_report)

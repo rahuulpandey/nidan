@@ -33,10 +33,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def load_env():
-    """
-    Kept for compatibility. If you ever want to reload .env at runtime,
-    you can call this, but normally it's not needed anymore.
-    """
     load_dotenv()
 
 # Now these read from the environment that was just loaded
