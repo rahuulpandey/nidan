@@ -229,8 +229,6 @@ def run_app():
         st.session_state.query_history = []
     if "listening" not in st.session_state:
         st.session_state.listening = False
-    if "speech_text" not in st.session_state:
-        st.session_state.speech_text = ""
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
@@ -241,7 +239,7 @@ def run_app():
     with col_input:
         st.session_state.user_query = st.text_input(
             "Enter your query",
-            value=st.session_state.speech_text or st.session_state.user_query,
+            value=st.session_state.user_query,
             placeholder="Describe your health concern...",
             label_visibility="collapsed"
         )
@@ -256,16 +254,16 @@ def run_app():
     )
 
 
-# live status indicator so the user sees the state change instantly.
+# # live status indicator so the user sees the state change instantly.
 
-    if st.session_state.listening:
-        mic_status = "Listening…" if st.session_state.listening else "Mic idle"
-        mic_color = "#ff4b4b" if st.session_state.listening else "#6c757d"
+#     if st.session_state.listening:
+#         mic_status = "Listening…" if st.session_state.listening else "Mic idle"
+#         mic_color = "#ff4b4b" if st.session_state.listening else "#6c757d"
 
-        st.markdown(
-            f"<div class='mic-status' style='color:{mic_color};'>🎙 {mic_status}</div>",
-            unsafe_allow_html=True
-        )
+#         st.markdown(
+#             f"<div class='mic-status' style='color:{mic_color};'>🎙 {mic_status}</div>",
+#             unsafe_allow_html=True
+#         )
 
 # mic buttons and function
 
@@ -291,7 +289,7 @@ def run_app():
                 st.session_state.user_query = "" 
             else:
                 st.warning("⚠️ Please provide a query to send.")
-# listening 
+# listening
     if st.session_state.listening:
         with st.spinner("Listening..."):
             text = listen_speech()
@@ -314,7 +312,8 @@ def run_app():
             })
 
             st.toast("Voice query submitted 🎙️", icon="🤖")
-
+    else:
+        st.warning("Could not hear clearly. Please try again.")
 
 
 #clear button
