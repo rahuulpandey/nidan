@@ -312,8 +312,8 @@ def run_app():
             })
 
             st.toast("Voice query submitted 🎙️", icon="🤖")
-    else:
-        st.warning("Could not hear clearly. Please try again.")
+        else:
+            st.warning("Could not hear clearly. Please try again.")
 
 
 #clear button
