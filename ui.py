@@ -210,7 +210,6 @@ def format_ai_text(text: str) -> str:
 
 def run_app():
 
-
 # Basic Streamlit page config (should be first call)
     st.set_page_config(page_title="NIDAN.ai", layout="wide")
     load_css()

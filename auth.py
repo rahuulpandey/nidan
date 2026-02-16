@@ -2,6 +2,7 @@
 
 import streamlit as st
 import hashlib
+import re
 
 # ---------- Password Security ----------
 
@@ -18,7 +19,13 @@ USERS = {}
 
 def signup():
     st.subheader("📝 Create Account")
-
+    
+    # email validation
+    email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    if not re.match(email_pattern, email):
+        st.error("Please enter a valid email address")
+        return
+    
     email = st.text_input("Email", key="signup_email")
     password = st.text_input("Password", type="password", key="signup_password")
     confirm = st.text_input("Confirm Password", type="password")
@@ -30,6 +37,10 @@ def signup():
 
         if password != confirm:
             st.error("Passwords do not match")
+            return
+        
+        if len(password) < 6 or not any(char.isdigit() for char in password):
+            st.error("Password must be at least 6 characters and contain a number")
             return
 
         if email in USERS:
