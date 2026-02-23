@@ -4,7 +4,6 @@ import streamlit as st
 from config import load_env
 load_env()
 from ui import run_app
-from ui import run_app
 from auth import login, signup
 
 
