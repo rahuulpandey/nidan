@@ -9,6 +9,24 @@ import io
 from services.doctor_service import recommend_real_doctor
 
 
+if not GOOGLE_API_KEY:
+    st.error("⚠️ Missing GOOGLE_API_KEY environment variable.")
+else:
+    genai.configure(api_key=GOOGLE_API_KEY)
+
+    text_model = genai.GenerativeModel(
+        model_name="gemini-flash-latest",
+        generation_config={
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "max_output_tokens": 1024
+        }
+    )
+
+    vision_model = genai.GenerativeModel(
+        model_name="gemini-flash-latest"
+    )
+
 #functions for follow up query
 def is_follow_up_query(user_query: str) -> bool:
     q = user_query.lower().strip()
@@ -51,13 +69,56 @@ def configure_gemini(api_key=None):
     genai.configure(api_key=key)
     return True
 
+# def chat_with_ai(user_input: str):
+#     """
+#     Ask the model to respond as a short health assistant.
+#     Returns the response text or an error string.
+#     """
+#     if not configure_gemini():
+#         return "⚠️ AI service is unavailable due to missing API Key."
+
+#     try:
+#         use_context = False
+#         context_block = ""
+
+#         if is_follow_up_query(user_input):
+#             recent_context = build_recent_context(
+#                 st.session_state.get("chat_history", []),
+#                 turns=2
+#             )
+
+#             if recent_context:
+#                 use_context = True
+#                 context_block = (
+#                     "Previous conversation context:\n"
+#                     f"{recent_context}\n\n"
+#                 )
+
+#         custom_prompt = (
+#             "You are a professional and empathetic health assistant. "
+#             "Provide clear, helpful, and engaging explanations. "
+#             "Keep responses informative but not overly long. "
+#             "Use short paragraphs if helpful. "
+#             "Do not answer queries unrelated to healthcare.\n\n"
+#         )
+
+#         if use_context:
+#             custom_prompt += context_block
+
+#         custom_prompt += f"Current question:\n{user_input}"
+#         model = genai.GenerativeModel(model_name="gemini-flash-latest", 
+#                                       generation_config={
+#                                                             "temperature": 0.7,
+#                                                             "top_p": 0.95,
+#                                                             "max_output_tokens": 1024
+#                                                         }
+#         )
+#         response = model.generate_content(custom_prompt)
+#         return response.text if hasattr(response, "text") else "No response from AI."
+#     except Exception as e:
+#         return f"⚠️ AI Error: {str(e)}"
+
 def chat_with_ai(user_input: str):
-    """
-    Ask the model to respond as a short health assistant.
-    Returns the response text or an error string.
-    """
-    if not configure_gemini():
-        return "⚠️ AI service is unavailable due to missing API Key."
 
     try:
         use_context = False
@@ -78,9 +139,8 @@ def chat_with_ai(user_input: str):
 
         custom_prompt = (
             "You are a professional and empathetic health assistant. "
-            "Provide clear, helpful, and engaging explanations. "
+            "Provide clear, helpful explanations. "
             "Keep responses informative but not overly long. "
-            "Use short paragraphs if helpful. "
             "Do not answer queries unrelated to healthcare.\n\n"
         )
 
@@ -88,32 +148,96 @@ def chat_with_ai(user_input: str):
             custom_prompt += context_block
 
         custom_prompt += f"Current question:\n{user_input}"
-        model = genai.GenerativeModel(model_name="gemini-flash-latest", 
-                                      generation_config={
-                                                            "temperature": 0.7,
-                                                            "top_p": 0.95,
-                                                            "max_output_tokens": 1024
-                                                        }
-        )
-        response = model.generate_content(custom_prompt)
+
+        response = text_model.generate_content(custom_prompt)
+
         return response.text if hasattr(response, "text") else "No response from AI."
+
     except Exception as e:
-        return f"⚠️ AI Error: {str(e)}"
+        return f"AI Error: {str(e)}"
     
 
-def analyze_medical_image_with_ai(image: Image.Image, modality: str) -> str:
-    """
-    Educational, non-diagnostic visual interpretation of medical images.
-    Uses Gemini Vision to provide structured guidance only.
-    """
+# def analyze_medical_image_with_ai(image: Image.Image, modality: str) -> str:
+#     """
+#     Educational, non-diagnostic visual interpretation of medical images.
+#     Uses Gemini Vision to provide structured guidance only.
+#     """
 
-    if not configure_gemini():
-        return "AI image analysis is currently unavailable."
+#     if not configure_gemini():
+#         return "AI image analysis is currently unavailable."
+
+#     try:
+#         # Convert PIL image to bytes
+#         buffer = io.BytesIO()
+#         image = image.resize((1024, 1024))
+#         buffer = io.BytesIO()
+#         image.save(buffer, format="JPEG", quality=85, optimize=True)
+#         image_bytes = buffer.getvalue()
+
+        # prompt = f"""
+        #     You are NIDAN.ai, an AI-powered medical imaging assistant designed to support early understanding of medical scans.
+
+        #         Analyze the uploaded medical scan image (X-ray, CT, MRI, Ultrasound, PET, Mammogram, etc.) and provide:
+        #             -A clear visual interpretation
+        #             -Possible medical implications
+        #             -General medical suggestions or next steps
+        #             -use simple language which can be understood easily be general person
+
+        #         You may infer likely conditions in probabilistic and supportive language, but you must:
+        #             -Avoid definitive diagnosis
+        #             -Avoid prescribing medication
+        #             -Encourage professional medical consultation where appropriate
+
+        #     RESPONSE STRUCTURE
+
+        #     1. Scan Identification-
+        #         Imaging modality and body region (if identifiable)
+
+        #     2. Visual Assessment-
+        #         Image quality and orientation
+        #         Key anatomical structures visible
+
+        #     3. Notable Findings-
+        #         Abnormalities, asymmetry, enlargement, opacities, lesions, fluid, signal or density changes
+
+        #     4. Possible Clinical Significance-
+        #         Explain what the observed findings may be associated with
+        #         Use language such as may suggest, can be seen in, often associated with
+
+        #     5. AI Medical Guidance-
+        #         General health guidance
+        #         Lifestyle or monitoring suggestions
+        #         When the user should seek medical attention
+
+        #     6. Recommended Next Steps-
+        #         Further imaging, lab tests, or specialist consultation if relevant
+        # """
+
+#         model = genai.GenerativeModel("gemini-flash-latest")
+
+#         response = model.generate_content(
+#             [
+#                 prompt,
+#                 {
+#                     "mime_type": "image/png",
+#                     "data": image_bytes
+#                 }
+#             ]
+#         )
+
+#         return response.text if hasattr(response, "text") else "No AI analysis generated."
+
+#     except Exception as e:
+#         return f"AI Image Analysis Error: {str(e)}"
+
+def analyze_medical_image_with_ai(image: Image.Image, modality: str) -> str:
 
     try:
-        # Convert PIL image to bytes
+        # Resize for faster upload
+        image = image.resize((1024, 1024))
+
         buffer = io.BytesIO()
-        image.save(buffer, format="PNG")
+        image.save(buffer, format="JPEG", quality=85, optimize=True)
         image_bytes = buffer.getvalue()
 
         prompt = f"""
@@ -155,13 +279,11 @@ def analyze_medical_image_with_ai(image: Image.Image, modality: str) -> str:
                 Further imaging, lab tests, or specialist consultation if relevant
         """
 
-        model = genai.GenerativeModel("gemini-flash-latest")
-
-        response = model.generate_content(
+        response = vision_model.generate_content(
             [
                 prompt,
                 {
-                    "mime_type": "image/png",
+                    "mime_type": "image/jpeg",
                     "data": image_bytes
                 }
             ]

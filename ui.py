@@ -463,8 +463,6 @@ def run_app():
             st.info("No chat history to export.")
 
 
-
-
 # this is the modified part
     st.markdown("---")
     st.markdown("<div class='chat_head'><h1>Medical Image Enhancer and Analyzer</h1></div>", unsafe_allow_html=True)
@@ -541,21 +539,20 @@ def run_app():
         """)
 
 
-    st.markdown("---")
-    st.markdown("<div class='chat_head'><h1>Doctor Recommendation</h1></div>", unsafe_allow_html=True)
+    # st.markdown("---")
+    # st.markdown("<div class='chat_head'><h1>Doctor Recommendation</h1></div>", unsafe_allow_html=True)
 
 
-#new import for doctor search
+# #new import for doctor search
 
-    symptom = st.text_input("Enter your symptom", key="symptom")
-    location = st.text_input("Enter the Location", key="location")
-    if st.button("Search", use_container_width=True, key="search_doctor"):
-        if symptom.strip():
-            doctor_recommendation = recommend_doctor(symptom, location)
-            st.markdown(f"<div class='text-box'>{doctor_recommendation}</div>", unsafe_allow_html=True)
-        else:
-            st.warning("⚠️ Please enter a symptom before searching.")
-
+#     symptom = st.text_input("Enter your symptom", key="symptom")
+#     location = st.text_input("Enter the Location", key="location")
+#     if st.button("Search", use_container_width=True, key="search_doctor"):
+#         if symptom.strip():
+#             doctor_recommendation = recommend_doctor(symptom, location)
+#             st.markdown(f"<div class='text-box'>{doctor_recommendation}</div>", unsafe_allow_html=True)
+#         else:
+#             st.warning("⚠️ Please enter a symptom before searching.")
 
 
 

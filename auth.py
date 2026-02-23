@@ -4,18 +4,17 @@ import streamlit as st
 import hashlib
 import re
 
-# ---------- Password Security ----------
+#Password Security 
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-# ---------- In-memory user store (temporary) ----------
-# Later we will replace this with SQLite
+#In-memory user store (temporary)
 USERS = {}
 
 
-# ---------- Signup ----------
+# Signup 
 
 def signup():
     st.subheader("📝 Create Account")
