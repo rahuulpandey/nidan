@@ -1,15 +1,17 @@
+# transforming and enhancing images using open cv 
+
 import cv2
 import numpy as np
 from PIL import Image
 
-# ---------- Image Conversion ----------
+#Image Conversion
 def pil_to_gray_np(pil_img):
     img = np.array(pil_img)
     if len(img.shape) == 3:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     return img
 
-# ---------- Enhancement Methods ----------
+#Enhancement Methods using open cv
 def enhance_xray(img):
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(img)

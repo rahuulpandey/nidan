@@ -18,6 +18,8 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 import textwrap 
 
+
+# list of symptoms and there explanation for the output
 SYMPTOM_CATEGORIES = {
     "emergency": [
         "chest pain", "breathing", "shortness of breath",
@@ -75,12 +77,14 @@ EXPLANATION_TEMPLATES = {
         "This response provides general health-related information based on the concern described."
     )
 }
- 
+
+# function for loading external css in streamlit
 def load_css():
     if os.path.exists(CSS_FILE):
         with open(CSS_FILE) as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# function for hero and heading
 def hero_and_slideshow():
     # Simple hero text
     heading = """
@@ -111,15 +115,14 @@ def export_chat_as_txt(chat_history):
         lines.append("-" * 40)
     return "\n".join(lines)
 
-
+#helper function for exporting as text
 def clean_markdown(text):
     # Remove markdown symbols
     text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
     text = re.sub(r"###\s*", "", text)
     return text
 
-#helper function for exporting as text
-
+#helper function for exporting chat as pdf
 def export_chat_as_pdf(chat_history):
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -191,6 +194,7 @@ def export_chat_as_pdf(chat_history):
     buffer.seek(0)
     return buffer
 
+# format the output given with bullets,bold headings.
 def format_ai_text(text: str) -> str:
     text = html.escape(text)
 
@@ -208,6 +212,7 @@ def format_ai_text(text: str) -> str:
 
     return text
 
+# MAIN FUNCTION CONTAINING ALL UI ELEMENTS
 def run_app():
 
 # Basic Streamlit page config (should be first call)
