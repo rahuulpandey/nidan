@@ -9,12 +9,14 @@ from services.ai_service import chat_with_ai, recommend_doctor
 from services.image_service import enhance_and_analyze_image
 from services.speech_service import speak_text, listen_speech
 from services.ai_service import analyze_medical_image_with_ai
+from database import save_chat, get_chat_history, delete_chat, save_image_analysis, get_image_history, delete_image_analysis, clear_all_history
 from PIL import Image
 import os
 import html
 import re
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+import base64
 from io import BytesIO
 import textwrap 
 
@@ -212,6 +214,12 @@ def format_ai_text(text: str) -> str:
 
     return text
 
+
+def show_history():
+    from database import (get_chat_history, delete_chat,
+                          get_image_history, delete_image_analysis,
+                          clear_all_history)
+
 # MAIN FUNCTION CONTAINING ALL UI ELEMENTS
 def run_app():
 
@@ -284,6 +292,7 @@ def run_app():
         if st.button("Send 🤖", disabled=st.session_state.listening):
             if st.session_state.user_query.strip():
                 ai_response = chat_with_ai(st.session_state.user_query)
+                save_chat(st.session_state.user, st.session_state.user_query, ai_response)
                 st.session_state.chat_history.append({
                     "user": st.session_state.user_query,
                     "ai": ai_response,
@@ -308,7 +317,7 @@ def run_app():
 
             # ✅ Treat voice exactly like typed input
             ai_response = chat_with_ai(spoken_text)
-
+            save_chat(st.session_state.user, spoken_text, ai_response)
             st.session_state.chat_history.append({
                 "user": spoken_text,
                 "ai": ai_response,
@@ -486,33 +495,64 @@ def run_app():
         image = Image.open(uploaded_file)
 
         show_intermediate = st.checkbox(
-        "Show Enhanced Images",
-        value=False
-    )
-        # 👇 pass modality to the service
-        enhanced_img, edges_img, mean_intensity, edge_density, ai_feedback = enhance_and_analyze_image(image, modality)
-        ai_vision_report = analyze_medical_image_with_ai(image, modality)
-        trimmed_image = trim_image(image)
+            "Show Enhanced Images",
+            value=False
+        )
 
+        # ✅ Only analyze + save if this is a NEW upload
+        if st.session_state.get("last_uploaded_file") != uploaded_file.name:
+            st.session_state.last_uploaded_file = uploaded_file.name
 
-# this is the modified part
+            # Convert image to base64 for storage
+            buffered = BytesIO()
+            image.save(buffered, format="JPEG")
+            img_base64 = base64.b64encode(buffered.getvalue()).decode()
+
+            # Run analysis
+            enhanced_img, edges_img, mean_intensity, edge_density, ai_feedback = enhance_and_analyze_image(image, modality)
+            ai_vision_report = analyze_medical_image_with_ai(image, modality)
+
+            # Save to session state
+            st.session_state.last_analysis = {
+                "enhanced_img": enhanced_img,
+                "edges_img": edges_img,
+                "mean_intensity": mean_intensity,
+                "edge_density": edge_density,
+                "ai_feedback": ai_feedback,
+                "ai_vision_report": ai_vision_report,
+            }
+
+            # Save to DB only ONCE
+            save_image_analysis(
+                st.session_state.user, uploaded_file.name, modality,
+                mean_intensity, edge_density, ai_feedback, ai_vision_report, img_base64
+            )
+
+        # ✅ Always read from session state for display
+        enhanced_img     = st.session_state.last_analysis["enhanced_img"]
+        edges_img        = st.session_state.last_analysis["edges_img"]
+        mean_intensity   = st.session_state.last_analysis["mean_intensity"]
+        edge_density     = st.session_state.last_analysis["edge_density"]
+        ai_feedback      = st.session_state.last_analysis["ai_feedback"]
+        ai_vision_report = st.session_state.last_analysis["ai_vision_report"]
+        trimmed_image    = trim_image(image)
+
+        # this is the modified part — display code stays EXACTLY the same
         if show_intermediate:
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.image(image, caption="Original Image", width=200)
-                with col2:
-                    st.image(enhanced_img, caption=f"Enhanced Image ({modality})", width=200)
-                with col3:
-                    st.image(edges_img, caption="Edge Map (Canny Detection)", width=200)
-                with col4:
-                    st.image(trimmed_image, caption="Trimmed Image", width=200)
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.image(image, caption="Original Image", width=200)
+            with col2:
+                st.image(enhanced_img, caption=f"Enhanced Image ({modality})", width=200)
+            with col3:
+                st.image(edges_img, caption="Edge Map (Canny Detection)", width=200)
+            with col4:
+                st.image(trimmed_image, caption="Trimmed Image", width=200)
         else:
             col1, col2 = st.columns(2)
-
             with col1:
                 st.image(image, caption="Original Image", width=200)
 
-# Image summary
             st.markdown("### 🔎 Image Analysis Summary")
             st.markdown(f"🔬 Mean Intensity: {mean_intensity:.2f}")
             st.markdown(f"🔍 Edge Density: {edge_density:.4f}")
@@ -521,14 +561,12 @@ def run_app():
         with st.expander("🧠 AI Visual Review (Educational)"):
             st.markdown(ai_vision_report)
 
-
         with st.expander("ℹ️ What do these metrics mean?"):
             st.markdown("""
             - **Mean Intensity** reflects overall brightness of the image.
             - **Edge Density** indicates the amount of structural detail.
             - These values are used only for visual enhancement, not diagnosis.
             """)
-
 
     else:
         st.info("Upload a medical image to see enhancement and analysis.")
@@ -547,20 +585,135 @@ def run_app():
     # st.markdown("---")
     # st.markdown("<div class='chat_head'><h1>Doctor Recommendation</h1></div>", unsafe_allow_html=True)
 
-
-# #new import for doctor search
-
-#     symptom = st.text_input("Enter your symptom", key="symptom")
-#     location = st.text_input("Enter the Location", key="location")
-#     if st.button("Search", use_container_width=True, key="search_doctor"):
-#         if symptom.strip():
-#             doctor_recommendation = recommend_doctor(symptom, location)
-#             st.markdown(f"<div class='text-box'>{doctor_recommendation}</div>", unsafe_allow_html=True)
-#         else:
-#             st.warning("⚠️ Please enter a symptom before searching.")
-
-
-
+    
+    st.markdown("---")
+    st.markdown("<h1 style='color:#4da3ff;'>📋 Report History</h1>", unsafe_allow_html=True)
+ 
+    user_email = st.session_state.get("user", "")
+    if not user_email:
+        st.info("Please log in to view your history.")
+        return
+ 
+    tab1, tab2 = st.tabs(["💬 Chat History", "🖼️ Image Analysis History"])
+ 
+    # ── Chat History Tab ──────────────────────────────────
+    with tab1:
+        chat_records = get_chat_history(user_email)
+ 
+        if not chat_records:
+            st.info("No chat history yet. Ask a health question above to get started!")
+        else:
+            col_info, col_btn = st.columns([5, 1])
+            with col_info:
+                st.markdown(f"**{len(chat_records)} consultation(s) saved**")
+            with col_btn:
+                if st.button("🗑 Clear All", key="clear_all_chat",
+                             type="secondary", use_container_width=True):
+                    clear_all_history(user_email)
+                    st.success("All history cleared!")
+                    st.rerun()
+ 
+            st.markdown("<br>", unsafe_allow_html=True)
+ 
+            for record in chat_records:
+                record_id, query, response, created_at = record
+ 
+                st.markdown(f"""
+                    <div style="
+                        border: 1px solid #2a2a3d;
+                        border-radius: 12px;
+                        padding: 16px 20px;
+                        margin-bottom: 6px;
+                        background: rgba(77,163,255,0.04);
+                    ">
+                        <div style="color:#666; font-size:1rem; margin-bottom:8px;">
+                            🕐 {created_at}
+                        </div>
+                        <div style="color:#9ad1ff; font-weight:600; font-size:1.5rem;">
+                            🧑 You: {query}
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+ 
+                col_exp, col_del = st.columns([5, 0.3])
+                with col_exp:
+                    with st.expander("🤖 View AI Response"):
+                        st.markdown(response)
+                with col_del:
+                    if st.button("🗑", key=f"del_chat_{record_id}",
+                                 help="Delete this record"):
+                        delete_chat(record_id)
+                        st.toast("Deleted!")
+                        st.rerun()
+ 
+    # ── Image Analysis History Tab ────────────────────────
+    with tab2:
+        image_records = get_image_history(user_email)
+ 
+        if not image_records:
+            st.info("No image analysis history yet. Upload a medical image above to get started!")
+        else:
+            col_info, col_btn = st.columns([5, 1])
+            with col_info:
+                st.markdown(f"**{len(image_records)} image analysis(es) saved**")
+            with col_btn:
+                if st.button("🗑 Clear All", key="clear_all_img",
+                             type="secondary", use_container_width=True):
+                    clear_all_history(user_email)
+                    st.success("All history cleared!")
+                    st.rerun()
+ 
+            st.markdown("<br>", unsafe_allow_html=True)
+ 
+            for record in image_records:
+                rec_id, filename, modality, mean_int, edge_den, ai_fb, ai_vision, image_data, created_at = record
+ 
+                st.markdown(f"""
+                    <div style="
+                        border: 2px solid #2a2a3d;
+                        border-radius: 12px;
+                        padding: 7px 20px 5px 20px;
+                        margin-top: 5px;
+                        margin-bottom: 6px;
+                        background: rgba(77,163,255,0.04);
+                    ">
+                        <div style="color:#666; font-size:1rem;">🕐 {created_at}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+ 
+                col_img, col_info, col_del = st.columns([1, 10, 0.7])
+ 
+                with col_img:
+                    if image_data:
+                        st.markdown(
+                            f"<img src='data:image/jpeg;base64,{image_data}' "
+                            f"style='width:100%; border-radius:10px; margin-top:10px;'>",
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.markdown(
+                            "<div style='color:#555; font-size:0.85rem; padding:20px;"
+                            "text-align:center; border:1px dashed #333; border-radius:8px;'>"
+                            "No preview</div>",
+                            unsafe_allow_html=True
+                        )
+ 
+                with col_info:
+                    st.markdown(f"📁 **File:** {filename or 'Unknown'}")
+                    st.markdown(f"🩻 **Type:** {modality or 'Unknown'}")
+                    st.markdown(f"🔬 **Intensity:** {round(mean_int, 2) if mean_int else 'N/A'}")
+                    st.markdown(f"📊 **Edge Density:** {round(edge_den, 4) if edge_den else 'N/A'}")
+                    with st.expander("🧠 View AI Analysis"):
+                        st.markdown(f"**Quick Feedback:** {ai_fb}")
+                        st.markdown("---")
+                        st.markdown(ai_vision)
+ 
+                with col_del:
+                    if st.button("🗑", key=f"del_img_{rec_id}",
+                                 help="Delete this record"):
+                        delete_image_analysis(rec_id)
+                        st.toast("Deleted!")
+                        st.rerun()
     # Footer (kept simple)
     st.markdown("""
     <footer class="footer">
@@ -575,5 +728,6 @@ def run_app():
                 </ul>
             </div>
         </div>
-    </footer>
+    </footer>   
     """, unsafe_allow_html=True)
+

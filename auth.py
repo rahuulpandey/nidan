@@ -217,4 +217,4 @@ def login():
 
 
 # Auto-init DB on import
-init_db()
+from database import init_db
